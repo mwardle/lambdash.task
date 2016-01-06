@@ -1,0 +1,14 @@
+{
+  "name": "lambdash.task",
+  "version": "0.5.0",
+  "description": "Task data type for Lambdash",
+  "main": "src/Task.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha test/"
+  },
+  "author": "Mark Wardle <mwwardle@gmail.com>",
+  "license": "MIT"
+}
