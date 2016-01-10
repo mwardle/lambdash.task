@@ -171,7 +171,7 @@ This function has 3 parameters:
 
 Functions the same as recover, but without the condition.
 
-### Task.concatSeries :: Semigroup b => Task a b -> Task a b -> Task a b
+### Task.concatSeries :: `Semigroup b => Task a b -> Task a b -> Task a b`
 
 Returns a task that concatenates the resolved values of two tasks with serial execution.
 
@@ -202,7 +202,7 @@ If either of the tasks rejects, the new task will reject with the same value.
 
 ```
 
-### Task.concatParallel :: Semigroup b => Task a b -> Task a b -> Task a b
+### Task.concatParallel :: `Semigroup b => Task a b -> Task a b -> Task a b`
 
 Returns a task that concatenates the resolved values of two tasks with parallel execution.
 
@@ -304,7 +304,7 @@ This function is equivalent to `_.compose(Task.flatten, Task.map)` though the im
 
 ```
 
-### Task.chainRejected :: `(b -> Task a d) -> Task a b -> Task a d`
+### Task.chainRejected :: `(a -> Task c b) -> Task a b -> Task c b`
 
 Monadically flat-maps a tasks rejected value.
 
@@ -568,7 +568,7 @@ The new task will run in a non-blocking manner.
 Creates a task from another task which will delay the task for a specified number of milliseconds.
 
 ```
-    var nonBlockingTask = Task.delay(Task.of(200, "whatever"));
+    var delayedTask = Task.delay(200, Task.of"whatever"));
 ```
 
 
