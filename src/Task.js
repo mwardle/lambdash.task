@@ -18,6 +18,13 @@ Task.of = _.curry(function(value){
 });
 
 /**
+ * An alias of Task.of
+ *
+ * @sig b -> Task a b
+ */
+Task.resolve = Task.of;
+
+/**
  * Creates a task that rejects with a given value
  *
  * @sig a -> Task a b
@@ -62,14 +69,14 @@ Task.mapRejected = _.curry(function(fn, task){
  *
  *      var fail = Task.reject("oh no");
  *
- *      var taskOk = Task.recover(_.equal("oh no"), _.always("ok"), fail);
+ *      var taskOk = Task.recover(_.eq("oh no"), _.always("ok"), fail);
  *      Task.fork(function(failure){
  *          // this doesn't happen because the condition passed
  *      }, function(result){
  *          // result is "ok" here
  *      }, taskOk);
  *
- *      var taskOhNo = Task.recover(_.equal("oh boy"), _.always("ok"), fail);
+ *      var taskOhNo = Task.recover(_.eq("oh boy"), _.always("ok"), fail);
  *      Task.fork(function(failure){
  *          // failure is "oh no" here
  *      }, function(result){
@@ -88,6 +95,13 @@ Task.recover = _.curry(function(cond, transform, task){
         task.exec(_recover, resolve);
     });
 });
+
+/**
+ * Same as recover except without the condition.
+ *
+ * @sig (a -> b) -> Task a b -> Task a b
+ */
+Task.alwaysRecover = Task.recover(_.T);
 
 /**
  * @sig Semigroup b => Task a b -> Task a b -> Task a b
@@ -142,6 +156,61 @@ Task.concatParallel = _.curry(function(left, right) {
  * @sig Semigroup b => Task a b -> Task a b -> Task a b
  */
 Task.concat = Task.concatParallel;
+
+
+/**
+ * Creates a task that applies the resolved value of one task to the value of another task.
+ *
+ * @sig Task a (b -> d) -> Task a b -> Task a d
+ */
+Task.ap = _.curry(function(apply, task) {
+    return Task(function(reject, resolve) {
+        apply.exec(reject, function(fnResult){
+            task.exec(reject, function(result){
+                resolve(fnResult(result));
+            });
+        });
+    });
+});
+
+/**
+ * Returns a task which flattens a nested task.
+ *
+ * @sig Task a (Task a b) -> Task a b
+ */
+Task.flatten = _.curry(function(task) {
+    return Task(function(reject, resolve){
+        task.exec(reject, function(result){
+            result.exec(reject, resolve);
+        });
+    });
+});
+
+/**
+ * Monadically flatMaps a tasks resolved value.
+ *
+ * @sig (b -> Task a d) -> Task a b -> Task a d
+ */
+Task.chain = _.curry(function(fn, task){
+    return Task(function(reject, resolve){
+        task.exec(reject, function(result){
+            fn(result).exec(reject, resolve);
+        });
+    });
+});
+
+/**
+ * Monadically flatMaps a tasks rejected value.
+ *
+ * @sig (b -> Task a d) -> Task a b -> Task a d
+ */
+Task.chainRejected = _.curry(function(fn, task){
+    return Task(function(reject, resolve){
+        task.exec(function(result){
+            fn(result).exec(reject, resolve);
+        }, resolve);
+    });
+});
 
 /**
  * @sig (Monoid s, Foldable s) => s (Task a b) -> Task a (s b)
@@ -219,59 +288,6 @@ Task.partition = _.curry(function(tasks) {
 
 });
 
-/**
- * Creates a task that applies the resolved value of one task to the value of another task.
- *
- * @sig Task a (b -> d) -> Task a b -> Task a d
- */
-Task.ap = _.curry(function(apply, task) {
-    return Task(function(reject, resolve) {
-        apply.exec(reject, function(fnResult){
-            task.exec(reject, function(result){
-                resolve(fnResult(result));
-            });
-        });
-    });
-});
-
-/**
- * Returns a task which flattens a nested task.
- *
- * @sig Task a (Task a b) -> Task a b
- */
-Task.flatten = _.curry(function(task) {
-    return Task(function(reject, resolve){
-        task.exec(reject, function(result){
-            result.exec(reject, resolve);
-        });
-    });
-});
-
-/**
- * Monadically flatMaps a tasks resolved value.
- *
- * @sig (b -> Task a d) -> Task a b -> Task a d
- */
-Task.chain = _.curry(function(fn, task){
-    return Task(function(reject, resolve){
-        task.exec(reject, function(result){
-            fn(result).exec(reject, resolve);
-        });
-    });
-});
-
-/**
- * Monadically flatMaps a tasks rejected value.
- *
- * @sig (b -> Task a d) -> Task a b -> Task a d
- */
-Task.chainRejected = _.curry(function(fn, task){
-    return Task(function(reject, resolve){
-        task.exec(function(result){
-            fn(result).exec(reject, resolve);
-        }, resolve);
-    });
-});
 
 /**
  * Executes a task.
@@ -304,6 +320,12 @@ Task.fromAsync = _.curry(function(async) {
     });
 });
 
+Task.fromAsync2 = _.curry(function(async) {
+    return Task(function(reject, resolve){
+        async(resolve);
+    });
+});
+
 /**
  * Creates a function from a normal async function that returns a task.
  *
@@ -320,6 +342,21 @@ Task.taskify = _.curry(function(async) {
 });
 
 /**
+ * Creates a function from a normal async function that returns a task.
+ *
+ * @example
+ *
+ *      var stat = Task.taskify(fs.stat);
+ *      var task = stat('somefile.txt');
+ *      Task.fork(onRejected, onResolved, task);
+ */
+Task.taskify2 = _.curry(function(async) {
+    return _.curryN(async.length - 1, function(){
+        return Task.fromAsync2(_.curry(async).apply(this, arguments));
+    });
+});
+
+/**
  * Makes a task run async (non-blocking).
  *
  * @sig Task a b -> Task a b
@@ -329,6 +366,19 @@ Task.immediate = _.curry(function(task){
         immediate(function(){
             task.exec(reject, resolve);
         });
+    });
+});
+
+/**
+ * Makes a task wait to run for a specified number of milliseconds.
+ *
+ * @sig Number -> Task a b -> Task a b
+ */
+Task.delay = _.curry(function(delay, task){
+    return Task(function(reject, resolve){
+        setTimeout(function(){
+            task.exec(reject, resolve);
+        }, delay);
     });
 });
 
