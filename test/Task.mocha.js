@@ -504,6 +504,17 @@ describe('Task', function(){
         });
     });
 
+    describe('#compose', function(){
+        it('should monadically compose a set of functions', function(){
+            var fn1 = function(v){
+                return Task.of(v);
+            };
+            var fn2 = function(v){
+                return Task.of(v + 1);
+            };
+        });
+    });
+
     describe('@implements', function(){
         it('should implement Functor', function(){
             assert(_.Functor.member(Task.of(1)));
