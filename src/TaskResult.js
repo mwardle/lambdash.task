@@ -69,6 +69,8 @@ TaskResult.foldr = TaskResult.foldl = TaskResult.fold;
 
 TaskResult.of = TaskResult.Resolved;
 
+TaskResult.ofRejected = TaskResult.Rejected;
+
 TaskResult.concat = _.curry(function(left, right){
     if (TaskResult.isRejected(left)){
         return left;
