@@ -559,7 +559,7 @@ not to pass any error to its callback function.
 Creates a task from another task.
 The new task will run in a non-blocking manner.
 
-```
+```javascript
     var nonBlockingTask = Task.immediate(Task.of("whatever"));
 ```
 
@@ -567,11 +567,66 @@ The new task will run in a non-blocking manner.
 
 Creates a task from another task which will delay the task for a specified number of milliseconds.
 
-```
+```javascript
     var delayedTask = Task.delay(200, Task.of("whatever"));
 ```
+### Task.timeoutWith :: `(Number -> a) -> Number -> Task a b -> Task a b`
 
+Sets a timeout for a task.
+
+If the task takes too long to execute, the first parameter will be called
+with the given time and the task will reject with the returned value.
+
+```javascript
+    var task = Task.delay(40, Task.of("ok"));
+
+    var errFn = function(time){ return Error("Took too long (" + time + "ms)") };
+    var time = 20;
+
+    var timeoutTask = Task.timeoutWith(errFn, time, task);
+
+    Task.fork(function(reason){
+        // reason will be Error: "Took too long (20ms)"
+    }, function(result){
+        // won't run since the task took too long
+    }, timeoutTask);
+
+```
+
+### Task.timeout :: `Number -> Task a b -> Task a b`
+
+Sets a timeout for a task.
+
+This works the same as Task.timeoutWith except that the first argument is already
+applied to return an instance of Task.TimeoutError when a timeout occurs.
+
+```javascript
+    var task = Task.delay(40, Task.of("ok"));
+
+    var time = 20;
+
+    var timeoutTask = Task.timeout(time, task);
+
+    Task.fork(function(reason){
+        // reason will be TimeoutError: "Task timed out after 20ms."
+    }, function(result){
+        // won't run since the task took too long
+    }, timeoutTask);
+
+```
+
+### Task.caught :: `Task a b -> Task a b`
+
+Creates a task from another which will catch an error if any and reject
+with the error.
 
 ### Task.show :: `Task a b -> String`
 
 Always returns the string "Task".
+
+## Prototype
+
+For convenience, several of the Task module functions are attached to the prototype.
+The signature is the same in all cases except that the last parameter is preapplied
+with `this`, except in the case of the three concat functions and the ap function which
+preapply their first parameter with `this` since it is more natural.

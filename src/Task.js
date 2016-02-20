@@ -386,7 +386,10 @@ Task.delay = _.curry(function(delay, task){
 /**
  * Makes a task reject if it takes too long to execute.
  *
- * @sig (() -> a) -> Number -> Task a b -> Task a b
+ * The time will be passed as the only argument to the error function
+ * when a timeout occurs.
+ *
+ * @sig ((Number) -> a) -> Number -> Task a b -> Task a b
  */
 Task.timeoutWith = _.curry(function(errFn, time, task){
     return Task(function(reject, resolve){
@@ -412,7 +415,13 @@ Task.timeoutWith = _.curry(function(errFn, time, task){
     });
 });
 
-
+/**
+ * Makes a task reject if it takes too long to execute.
+ *
+ * On timeout, will reject with a Task.TimeoutError.
+ *
+ * @sig Number -> Task a b -> Task a b
+ */
 Task.timeout = Task.timeoutWith(Task.TimeoutError);
 
 /**
