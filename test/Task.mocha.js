@@ -55,6 +55,44 @@ describe('Task', function(){
         });
     });
 
+    describe('#mapRejected', function(){
+        it('should create a new task whose rejection is mapped with the provided function', function(done){
+            var task = Task.mapRejected(_.add(1), Task.reject(1));
+
+            assert(Task.member(task));
+
+            task.exec(_.compose(done, equal(2)), tf);
+        });
+
+        it('should create a new task whose result is the resolved value if the result of the original task is resolved', function(done){
+            var task = Task.mapRejected(_.add(1), Task.of(1));
+
+            assert(Task.member(task));
+
+            task.exec(tf, _.compose(done, equal(1)));
+        });
+    });
+
+    describe('#recover', function(){
+        it('should recover from a rejected state if the predicate returns true', function(done){
+            var t = Task.recover(_.eq(1), _.add(2), Task.reject(1));
+
+            Task.fork(tf, _.compose(done, equal(3)), t);
+        });
+
+        it('should not recover from a rejected state if the predicate returns false', function(done){
+            var t = Task.recover(_.eq(2), _.add(2), Task.reject(1));
+
+            Task.fork(_.compose(done, equal(1)), tf, t);
+        });
+
+        it('should not recover from a resolved state', function(done){
+            var t = Task.recover(_.eq(2), _.add(2), Task.of(1));
+
+            Task.fork(tf, _.compose(done, equal(1)), t);
+        });
+    });
+
     describe('#concatSeries', function(){
         it('should concatenate two async functions with a serial execution order', function(done){
             var inc = 0;
@@ -258,6 +296,14 @@ describe('Task', function(){
 
             task.exec(_.compose(done, equal(1)), tf);
         });
+
+        it('should resolve with an empty collection if given an empty collection', function(done){
+            var task = Task.series([]);
+            task.exec(tf, _.compose(done, function(v){
+                assert(_.Arr.member(v));
+                assert.equal(v.length, 0);
+            }));
+        });
     });
 
     describe('#parallel', function(){
@@ -300,6 +346,14 @@ describe('Task', function(){
 
             task.exec(_.compose(done, equal(3)), tf);
         });
+
+        it('should resolve with an empty collection if given an empty collection', function(done){
+            var task = Task.parallel([]);
+            task.exec(tf, _.compose(done, function(v){
+                assert(_.Arr.member(v));
+                assert.equal(v.length, 0);
+            }));
+        });
     });
 
     describe('#partition', function(){
@@ -325,6 +379,16 @@ describe('Task', function(){
                 assert.equal(result[1].length, 3);
                 done();
             });
+        });
+
+        it('should resolve with an empty resolved and rejected collection if given an empty collection', function(done){
+            var task = Task.partition([]);
+            task.exec(tf, _.compose(done, function(v){
+                assert(_.Arr.member(v));
+                assert.equal(v.length, 2);
+                assert.equal(v[0].length, 0);
+                assert.equal(v[1].length, 0);
+            }), tf);
         });
     });
 
@@ -480,6 +544,141 @@ describe('Task', function(){
         });
     });
 
+    describe('#delay', function(){
+        it('should not affect the outcome of a task', function(done){
+            var start = Date.now();
+            var task = Task.delay(40, Task.of(1));
+            task.exec(tf, _.compose(done, function(){
+                assert(Date.now() - start > 40);
+                assert(Date.now() - start < 50);
+            }, equal(1)));
+        });
+    });
+
+    describe('#timeoutWith', function(){
+        it('should resolve if the timeout is greater than the time the task takes', function(done){
+            var task = Task.delay(20, Task.of(1));
+            var totask = Task.timeoutWith(_.alwaysThrow(Error, "timeout"), 40)(task);
+
+
+            totask.exec(tf, function(value){
+                // make sure it doesn't reject later from the timeout
+                assert.equal(value, 1);
+                setTimeout(done, 30);
+            });
+        });
+
+        it('should reject if the timeout is greater than the time the task takes', function(done){
+            var task = Task.delay(20, Task.reject(1));
+            var totask = Task.timeoutWith(_.alwaysThrow(Error, "timeout"), 40)(task);
+
+
+            totask.exec(function(value){
+                // make sure it doesn't reject later from the timeout
+                assert.equal(value, 1)
+                setTimeout(done, 30);
+            }, tf);
+        });
+
+        it('should reject with the timeout if it takes too long even though it would resolve', function(done){
+            var task = Task.delay(40, Task.of(1));
+            var totask = Task.timeoutWith(_.always(2), 20)(task);
+
+
+            totask.exec(function(value){
+                // make sure it doesn't resolve later
+                assert.equal(value, 2)
+                setTimeout(done, 30);
+            }, tf);
+        });
+
+        it('should reject with the timeout if it takes too long even though it would reject', function(done){
+            var task = Task.delay(40, Task.reject(1));
+            var totask = Task.timeoutWith(_.always(2), 20)(task);
+
+
+            totask.exec(function(value){
+                // make sure it doesn't resolve later
+                assert.equal(value, 2)
+                setTimeout(done, 30);
+            }, tf);
+        });
+    });
+
+    describe('#timeout', function(){
+        it('should resolve if the timeout is greater than the time the task takes', function(done){
+            var task = Task.delay(20, Task.of(1));
+            var totask = Task.timeout(40)(task);
+
+
+            totask.exec(tf, function(value){
+                // make sure it doesn't reject later from the timeout
+                assert.equal(value, 1);
+                setTimeout(done, 30);
+            });
+        });
+
+        it('should reject if the timeout is greater than the time the task takes', function(done){
+            var task = Task.delay(20, Task.reject(1));
+            var totask = Task.timeout(40)(task);
+
+
+            totask.exec(function(value){
+                // make sure it doesn't reject later from the timeout
+                assert.equal(value, 1)
+                setTimeout(done, 30);
+            }, tf);
+        });
+
+        it('should reject with the timeout if it takes too long even though it would resolve', function(done){
+            var task = Task.delay(40, Task.of(1));
+            var totask = Task.timeout(20)(task);
+
+
+            totask.exec(function(value){
+                // make sure it doesn't resolve later
+                assert(value instanceof Error);
+                assert(value instanceof Task.TimeoutError);
+                assert(value.stack);
+                assert.equal(value.message, "Task timed out after 20ms");
+                setTimeout(done, 30);
+            }, tf);
+        });
+
+        it('should reject with the timeout if it takes too long even though it would reject', function(done){
+            var task = Task.delay(40, Task.reject(1));
+            var totask = Task.timeout(20)(task);
+
+
+            totask.exec(function(value){
+                // make sure it doesn't resolve later
+                assert(value instanceof Error);
+                assert(value instanceof Task.TimeoutError);
+                assert(value.stack);
+                assert.equal(value.message, "Task timed out after 20ms");
+                setTimeout(done, 30);
+            }, tf);
+        });
+    });
+
+    describe('#caught', function(done){
+        it('should catch an exception and reject the task with it', function(done){
+            var task = Task(function(reject,resolve){
+                throw new Error('catch me');
+            });
+
+            var caught = Task.caught(task);
+
+            caught.exec(function(reason){
+                assert.equal(reason instanceof Error, true);
+                assert.equal(reason.message, 'catch me');
+                done();
+            }, tf);
+        });
+
+    });
+
+
     describe('#taskify', function(){
         it('should create a function from a regular async function that returns a task', function(done){
             var async = function(a, b, callback) {
@@ -493,7 +692,7 @@ describe('Task', function(){
 
             var add1 = taskified(1);
 
-            assert(_.Fun.member(taskified));
+            assert(_.Fun.member(add1));
             assert.equal(add1.length, 1);
 
             var task = add1(2);
@@ -504,16 +703,31 @@ describe('Task', function(){
         });
     });
 
-    describe('#compose', function(){
-        it('should monadically compose a set of functions', function(){
-            var fn1 = function(v){
-                return Task.of(v);
+    describe('#taskify2', function(){
+        it('should create a function from a regular async function that returns a task', function(done){
+            var async = function(a, b, callback) {
+                callback(a + b);
             };
-            var fn2 = function(v){
-                return Task.of(v + 1);
-            };
+
+            var taskified = Task.taskify2(async);
+
+            assert(_.Fun.member(taskified));
+            assert.equal(taskified.length, 2);
+
+            var add1 = taskified(1);
+
+            assert(_.Fun.member(add1));
+            assert.equal(add1.length, 1);
+
+            var task = add1(2);
+
+            assert(Task.member(task));
+
+            task.exec(tf, _.compose(done, equal(3)));
         });
     });
+
+
 
     describe('@implements', function(){
         it('should implement Functor', function(){

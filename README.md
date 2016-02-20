@@ -23,20 +23,20 @@ The second argument is a function that should be called with the resolved (succe
 The provided function should call either the rejected or resolved function exactly once.
 
 ```javascript
-    
+
     var task = Task(function(reject, resolve){
         // unnecessary asynchronicity
         process.nextTick(function(){
             resolve("Some Result");
-        }); 
+        });
     });
-    
+
     Task.fork(function(reason){
         // handle failure
     }, function(result) {
         // result === "Some Result"
     }, task)
-    
+
 ```
 
 ### Task.of :: `b -> Task a b`
@@ -44,9 +44,9 @@ The provided function should call either the rejected or resolved function exact
 Creates a Task that resolves to the given value.
 
 ```javascript
-    
+
     var task = Task.of("Some Result");
-    
+
     Task.fork(function(reason){
         // handle failure
     }, function(result) {
@@ -64,15 +64,15 @@ This is an alias of Task.of.
 Creates a Task that will always reject with the given reason.
 
 ```javascript
-    
+
     var task = Task.reject("Something wrong happened");
-    
+
     Task.fork(function(reason){
         // reason is "Something wrong happened";
     }, function(result) {
         // this does not execute
     }, task);
-    
+
 ```
 
 ### Task.map :: `(b -> d) -> Task a b -> Task a d`
@@ -84,18 +84,18 @@ If the mapped task rejects, the new task will reject without any change.
 
     var task1 = Task.of(1);
     var task2 = Task.map(_.add(2), task1);
-    
+
     Task.fork(function(reason){
         // this does not run;
     }, function(result) {
         // result is 3
     }, task2);
-    
-    
-    
+
+
+
     var task3 = Task.reject(1);
     var task4 = Task.map(_.add(2), task3);
-    
+
     Task.fork(function(reason){
         // reason is still 1 here
     }, function(result) {
@@ -113,18 +113,18 @@ If the mapped task resolves, the new task will resolve without any change.
 
     var task1 = Task.reject(1);
     var task2 = Task.mapRejected(_.add(2), task1);
-    
+
     Task.fork(function(reason){
         // reason is 3 here
     }, function(result) {
         // this does not run
     }, task2);
-    
-    
-    
+
+
+
     var task3 = Task.of(1);
     var task4 = Task.mapRejected(_.add(2), task3);
-    
+
     Task.fork(function(reason){
         // this does not run
     }, function(result) {
@@ -150,21 +150,21 @@ This function has 3 parameters:
 
     var reject1 = Task.reject("oh no");
     var reject2 = Task.reject("oh boy");
-    
+
     var recoverOhNo = Task.recover(_.eq("oh no"), _.always("all ok"));
-    
+
     Task.fork(function(reason){
         // does not run
     }, function(result) {
         // result is "all ok"
     }, recoverOhNo(reject1));
-    
+
     Task.fork(function(reason){
         // reason is still "oh boy"
     }, function(result) {
         // does not run since the condition did not pass
     }, recoverOhNo(reject2));
-    
+
 ```
 
 ### Task.alwaysRecover :: `(a -> b) -> Task a b -> Task a b`
@@ -182,22 +182,22 @@ If either of the tasks rejects, the new task will reject with the same value.
     var left = Task.delay(30, Task.of([1,2]));
     var right = Task.delay(20, Task.of([3,4]));
     var task = Task.concatSeries(left, right);
-    
+
     Task.fork(function(reason){
         // does not run
     }, function(result){
         // result is [1,2,3,4]
         // the whole thing should take about 50 ms (20 + 30)
     }, task);
-    
+
     left = Task.delay(30, Task.reject("oh no"));
     right = Task.delay(20, Task.reject("oh boy"));
     var reject = Task.concatSeries(left, right);
-      
+
     Task.fork(function(reason){
         // reason is "oh no" since the right task will not be executed at all
     }, function(result){
-        // will not run 
+        // will not run
     }, reject);
 
 ```
@@ -213,22 +213,22 @@ If either of the tasks rejects, the new task will reject with the same value.
     var left = Task.delay(30, Task.of([1,2]));
     var right = Task.delay(20, Task.of([3,4]));
     var task = Task.concatParallel(left, right);
-    
+
     Task.fork(function(reason){
         // does not run
     }, function(result){
         // result is [1,2,3,4]
         // the whole thing should take about 30 ms (max of 20 and 30)
     }, task);
-    
+
     left = Task.delay(30, Task.reject("oh no"));
     right = Task.delay(20, Task.reject("oh boy"));
     var reject = Task.concatParallel(left, right);
-    
+
     Task.fork(function(reason){
         // reason is "oh boy" since the right task will reject earlier
     }, function(result){
-        // will not run 
+        // will not run
     }, reject);
 
 ```
@@ -247,7 +247,7 @@ If the first task rejects, the second will not run.
 ```javascript
 
     var task = Task.ap(Task.of(_.add(2)), Task.of(1));
-    
+
     Task.fork(function(reason){
         // will not run
     }, function(result){
@@ -264,7 +264,7 @@ Returns a task which calls the nested result of another task.
 
     var task = Task.of(Task.of("ok"));
     var flattened = Task.flatten(task);
-    
+
     Task.fork(function(reason){
         // will not run
     }, function(result){
@@ -276,7 +276,7 @@ Returns a task which calls the nested result of another task.
 ### Task.chain :: `(b -> Task a d) -> Task a b -> Task a d`
 
 Monadically flat-maps a task.
- 
+
 This function is equivalent to `_.compose(Task.flatten, Task.map)` though the implementation is slightly more efficient.
 
 ```javascript
@@ -289,17 +289,17 @@ This function is equivalent to `_.compose(Task.flatten, Task.map)` though the im
             return Task.reject(e);
         }
     }
-    
+
     var task = Task.chain(jsonify, readFile('somefile.json'));
     // alternatively ...
     // var task = _.composeM(jsonify, readFile)(Task.of('somefile.json'));
-    
+
     Task.fork(function(reason){
         // if there is an error reading the file
         // or if the file contained invalid json
         // this will run with the error
     }, function(obj) {
-        // obj will be an object parsed from the json file 
+        // obj will be an object parsed from the json file
     }, task);
 
 ```
@@ -320,14 +320,14 @@ This function can be used to recover from an error.
             return Task.reject(e);
         }
     }
-    
+
     var defaults = function(err) {
         return Task.of({ /* Some default settings */ });
     }
-    
+
     var getSettings = Task.chain(jsonify, readFile('settings.json'));
     var getSettingsOrUseDefaults = Task.chainRejected(defaults, getSettings);
-    
+
     Task.fork(function(reason){
         // this wont run since we recovered the error with the defaults
     }, function(obj) {
@@ -354,9 +354,9 @@ The order of the resolved values is stable.
         Task.delay(30, Task.of(2)),
         Task.delay(10, Task.of(3))
     ];
-    
+
     var task = Task.series(tasks);
-    
+
     Task.fork(function(reason) {
         // would run if any of the tasks rejected
     }, function (result) {
@@ -383,9 +383,9 @@ The order of the resolved values is stable.
         Task.delay(30, Task.of(2)),
         Task.delay(10, Task.of(3))
     ];
-    
+
     var task = Task.parallel(tasks);
-    
+
     Task.fork(function(reason) {
         // would run if any of the tasks rejected
         // with the reason of the earliest rejected task
@@ -410,38 +410,38 @@ The created task will never reject.
 
     var validate = _.curry(function(validation, prop, obj) {
         var _valid = function(value) {
-            return validation(value) ? Task.of(prop + "is ok") : Task.reject(prop + "is invalid"); 
+            return validation(value) ? Task.of(prop + "is ok") : Task.reject(prop + "is invalid");
         }
         return Task.chain(_valid, Task.of(obj[prop]));
     });
-    
+
     var validations = [
         validate(_.Str.member, "a"),
         validate(_.gt(2), "b"),
         validate(_.eq(5), "c")
     ];
-    
+
     function validateObj(obj, onResolved) {
         var tasks = _.map(_.apply([obj]));
-  
+
         Task.fork(_.noop, onResolved, Task.partition(tasks));
     }
-    
+
     var obj = {
         a: "ok",
         b: 1,
         c: 5
     }
-    
+
     validateObj(obj, function(results){
         var failures = results[0];
         var successes = results[1];
-        
+
         // failures is ['b is invalid']
         // successes is ['a is ok', 'c is ok']
         // however the order of successes may be different
     });
-    
+
 
 ```
 
@@ -459,23 +459,23 @@ The behavior is equivalent to calling Task.map and Task.mapRejected separately.
     var rejectedMap = function(reason) {
         return reason + ", which is really bad.";
     }
-    
+
     var resolvedMap = function(result) {
         return reason + ", which is really good.";
     }
-    
+
     var mapGoodBad = Task.bimap(rejectedMap, resolvedMap);
-    
+
     var task = mapGoodBad(Task.of("We made it"));
-    
+
     Task.fork(function(reason){
         // won't run
     }, function(result) {
         // result is "We made it, which is really good.";
     }, task);
-    
+
     task = mapGoodBad(Task.reject("We didn't make it"));
-        
+
     Task.fork(function(reason){
         // reason is "We didn't make it, which is really bad."
     }, function(result) {
@@ -492,34 +492,34 @@ The function's last parameter must be a callback.
 The function must execute the callback with an error as the first argument.
 
 ```javascript
-    
+
     var divideAsync = function(a, b, callback) {
         if (b === 0) {
             callback('Division by zero is a bad thing');
             return;
         }
-        
+
         callback(null, a / b);
     }
-    
+
     var divide = Task.taskify(divideAsync);
-    
+
     var task1 = divide(16, 8);
     var task2 = divide(172, 0);
-    
+
     Task.fork(function(reason){
         // not run
     }, function(result){
         // result is 2 here
     }, task1);
-    
+
     Task.fork(function(reason){
         // reason is "Division by zero is a bad thing"
     }, function(result){
         // not run
     }, task2);
-    
-    
+
+
 ```
 
 Task.taskify2 :: `Function -> Task a b`
@@ -528,30 +528,30 @@ This is very similar to `Task.taskify` except that the given async function is e
 not to pass any error to its callback function.
 
 ```javascript
-    
+
     var divideAsync = function(a, b, callback) {
         // Division can never result in an error...
         callback(a / b);
     }
-    
+
     var divide = Task.taskify2(divideAsync);
-    
+
     var task1 = divide(16, 8);
     var task2 = divide(172, 0);
-    
+
     Task.fork(function(reason){
         // not run
     }, function(result){
         // result is 2 here
     }, task1);
-    
+
     Task.fork(function(reason){
         // not run
     }, function(result){
         // result is NaN here
     }, task2);
-    
-    
+
+
 ```
 
 ### Task.immediate :: `Task a b -> Task a b`
@@ -568,7 +568,7 @@ The new task will run in a non-blocking manner.
 Creates a task from another task which will delay the task for a specified number of milliseconds.
 
 ```
-    var delayedTask = Task.delay(200, Task.of"whatever"));
+    var delayedTask = Task.delay(200, Task.of("whatever"));
 ```
 
 

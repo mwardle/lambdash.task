@@ -1,9 +1,11 @@
 var _ = require('lambdash');
 
 Task = _.Type.product('Task', {exec: _.Fun});
+Task.TimeoutError = require('./TimeoutError');
 
-var immediate = process && _.Fun.member(process.nextTick)
-    ? process.nextTick
+
+var immediate = _.Fun.member(setImmediate) ? setImmediate
+    : process && _.Fun.member(process.nextTick) ? process.nextTick
     : setTimeout;
 
 /**
@@ -112,7 +114,7 @@ Task.concatSeries = _.curry(function(left, right){
             right.exec(reject, function(r){
                 resolve(_.concat(l,r));
             });
-        })
+        });
     });
 });
 
@@ -251,7 +253,7 @@ Task.parallel = _.curry(function(tasks) {
  */
 Task.partition = _.curry(function(tasks) {
     var M = _.Type.moduleFor(tasks);
-    var l = _.length(tasks);
+    var l = _.len(tasks);
 
     if (l === 0) {
         // cannot do anything with an empty list of tasks
@@ -329,6 +331,8 @@ Task.fromAsync2 = _.curry(function(async) {
 /**
  * Creates a function from a normal async function that returns a task.
  *
+ * The async function is expected to return an error as the first callback argument.
+ *
  * @example
  *
  *      var stat = Task.taskify(fs.stat);
@@ -344,11 +348,8 @@ Task.taskify = _.curry(function(async) {
 /**
  * Creates a function from a normal async function that returns a task.
  *
- * @example
- *
- *      var stat = Task.taskify(fs.stat);
- *      var task = stat('somefile.txt');
- *      Task.fork(onRejected, onResolved, task);
+ * This version is for async functions that do not return an error as the
+ * first callback argument.
  */
 Task.taskify2 = _.curry(function(async) {
     return _.curryN(async.length - 1, function(){
@@ -382,7 +383,76 @@ Task.delay = _.curry(function(delay, task){
     });
 });
 
+/**
+ * Makes a task reject if it takes too long to execute.
+ *
+ * @sig (() -> a) -> Number -> Task a b -> Task a b
+ */
+Task.timeoutWith = _.curry(function(errFn, time, task){
+    return Task(function(reject, resolve){
+        var timeout = null;
+        var _reject = function(reason){
+            if (timeout != null) {
+                clearTimeout(timeout);
+                reject(reason);
+            }
+        }
+        var _resolve = function(value){
+            if (timeout != null) {
+                clearTimeout(timeout);
+                resolve(value);
+            }
+        }
 
-Task.show = _.always('Task');
+        timeout = setTimeout(function(){
+            timeout = null;
+            reject(errFn(time));
+        }, time);
+        task.exec(_reject, _resolve);
+    });
+});
+
+
+Task.timeout = Task.timeoutWith(Task.TimeoutError);
+
+/**
+ * Catches an error a task may throw and rejects with the thrown error.
+ *
+ * @sig -> Task a b -> Task a b
+ */
+Task.caught = _.curry(function(task){
+    return Task(function(reject, resolve){
+        try {
+            task.exec(reject, resolve);
+        } catch(e) {
+            reject(e);
+        }
+    });
+});
+
+
+Task.show = _.curryN(1, _.always('Task'));
+
+Task.prototype = _.concat(Task.prototype || {}, {
+    map: _.thisify(Task.map),
+    mapRejected: _.thisify(Task.mapRejected),
+    recover: _.thisify(Task.recover),
+    alwaysRecover: _.thisify(Task.alwaysRecover),
+    concatSeries: _.thisify(_.flip(Task.concatSeries)),
+    concatParallel: _.thisify(_.flip(Task.concatParallel)),
+    concat: _.thisify(_.flip(Task.concat)),
+    ap: _.thisify(_.flip(Task.ap)),
+    flatten: _.thisify(Task.flatten),
+    chain: _.thisify(Task.chain),
+    chainRejected: _.thisify(Task.chainRejected),
+    fork: _.thisify(Task.fork),
+    bimap: _.thisify(Task.bimap),
+    immediate: _.thisify(Task.immediate),
+    delay: _.thisify(Task.delay),
+    timeoutWith: _.thisify(Task.timeoutWith),
+    timeout: _.thisify(Task.timeout),
+    caught: _.thisify(Task.caught),
+    show: _.thisify(Task.show)
+});
 
 module.exports = Task;
