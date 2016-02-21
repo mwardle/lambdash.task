@@ -5,7 +5,7 @@ A task is an asynchronous computation.
 ## Task data type
 
 A task is a container type that holds a single operation.
-The task data type implements lambdash's Semigroup, Functor, Applicative, Monad, and Show interfaces.
+The task data type implements [lambdash's](https://github.com/mwardle/lambdash.git) Semigroup, Functor, Applicative, Monad, and Show interfaces.
 
 A task object has the signature `{exec: (a -> ()) -> (b -> ()) -> ()}`
 A task objects signature is written as `Task a b` where a is the type of the task's rejected value and b is the type of the task's resolved value.
@@ -140,8 +140,7 @@ If the given task resolves rather than rejects, this function has no affect.
 
 This function has 3 parameters:
 
-1. condition: a function that accepts a rejection reason and returns a boolean.
-    if the condition returns true, the transform will be called and the task will resolve.
+1. condition: a function that accepts a rejection reason and returns a boolean. If the condition returns true, the transform will be called and the task will resolve.
 2. transform: a function that accepts a rejection reason and returns a value that will be resolved by the task.
 3. task: the task that is being recovered
 
@@ -449,6 +448,8 @@ The created task will never reject.
 
 Forces a task to reject or resolve with a rejected and resolved callback.
 
+Until a task has been forked, it has not run any computations.
+
 ### Task.bimap :: `(a -> c) -> (b -> d) -> Task a b -> Task c d`
 
 Maps both the rejected and resolved values of a task.
@@ -652,3 +653,13 @@ preapply their first parameter with `this` since it is more natural.
         .chain(v => Task.resolve(v * 3));
 
 ```
+
+## Implements
+
+Task implements the following lambdash interfaces:
+
+1. Functor
+2. Semigroup (Only if a tasks resolved type implements semigroup)
+3. Applicative
+4. Monad
+5. Show
