@@ -442,7 +442,8 @@ Task.caught = _.curry(function(task){
 
 Task.show = _.curryN(1, _.always('Task'));
 
-Task.prototype = _.concat(Task.prototype || {}, {
+/*Task.prototype = _.concat(Task.prototype || {}, {*/
+Task.prototype = _.Obj.concat(Task.prototype, {
     map: _.thisify(Task.map),
     mapRejected: _.thisify(Task.mapRejected),
     recover: _.thisify(Task.recover),
@@ -463,5 +464,7 @@ Task.prototype = _.concat(Task.prototype || {}, {
     caught: _.thisify(Task.caught),
     show: _.thisify(Task.show)
 });
+
+Task.prototype.constructor = Task;
 
 module.exports = Task;
