@@ -395,7 +395,7 @@ The order of the resolved values is stable.
 
 ```
 
-Task.partition :: `(Monoid s, Foldable s) => s (Task a b) -> Task a (s s (a|b)))`
+### Task.partition :: `(Monoid s, Foldable s) => s (Task a b) -> Task a (s s (a|b)))`
 
 Creates a task which runs a collection of tasks collecting the rejected and resolved values in separate collections.
 As an example, this may be useful for validation where all failures should be collected rather than just the first.
