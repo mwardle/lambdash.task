@@ -627,6 +627,28 @@ Always returns the string "Task".
 ## Prototype
 
 For convenience, several of the Task module functions are attached to the prototype.
+Specifically, every Task function with accepts a task as its
+final argument is attached to the prototype.
 The signature is the same in all cases except that the last parameter is preapplied
 with `this`, except in the case of the three concat functions and the ap function which
 preapply their first parameter with `this` since it is more natural.
+
+```javascript
+
+    // will resolve in 200 ms after forked
+    var delayed = Task.of("whatever").delay(200);
+
+    // will always reject with the throw error
+    var caught = Task.of(function(reject, resolve){
+        throw Error('whatever');
+    }).caught();
+
+    // will always resolve to [1,2,3,4,5,6]
+    var concated = Task.of([1,2,3]).concat(Task.of([4,5,6]));
+
+    // will always resolve to 9
+    Task.of(1)
+        .chain(v => Task.resolve(v + 2))
+        .chain(v => Task.resolve(v * 3));
+
+```
