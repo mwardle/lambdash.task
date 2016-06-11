@@ -358,6 +358,22 @@ Task.taskify2 = _.curry(function(async) {
 });
 
 /**
+ * Takes a function that returns a promise and returns a function that creates a task.
+ *
+ * @sig (*... -> Promise) -> (*... -> Task)
+ */
+Task.depromisify = _.curry(function(promiseFn)
+{
+    return _.curryN(promiseFn.length, function(){
+        var args = arguments;
+        return Task(function(reject, resolve){
+            console.log('TASK FORKED');
+            promiseFn.apply(this, args).then(resolve,reject).catch(reject);
+        });
+    });
+})
+
+/**
  * Makes a task run async (non-blocking).
  *
  * @sig Task a b -> Task a b

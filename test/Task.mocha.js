@@ -688,7 +688,6 @@ describe('Task', function(){
                 done();
             }, tf);
         });
-
     });
 
 
@@ -739,6 +738,42 @@ describe('Task', function(){
             task.exec(tf, _.compose(done, equal(3)));
         });
     });
+
+    describe('#depromisify', function(){
+        it('should create a function that returns a task from a function that returns a promise', function(done){
+            var checkV = 0;
+            assert(typeof Promise === 'function');
+            var promiseFn = function(a,b){
+                checkV++;
+                return Promise.resolve(a+b);
+            }
+
+            // test to make sure the promise function works
+            var p = promiseFn(4,5);
+            assert(p instanceof Promise);
+            assert.equal(checkV, 1);
+            p.then(function(value)
+            {
+                assert.equal(value, 9);
+
+                // now depromisify it
+                var taskFn = Task.depromisify(promiseFn);
+                assert(typeof taskFn === 'function');
+                assert.equal(taskFn.length, promiseFn.length);
+
+                var t = taskFn(4,5);
+                assert(t instanceof Task);
+                assert.equal(checkV, 1);
+
+                t.fork(tf, function(v){
+                    assert.equal(v,9);
+                    assert.equal(checkV,2);
+                    done();
+                });
+            })
+            .catch(done);
+        });
+    })
 
     describe('@prototype#map', function(){
         it('should create a new task whose result is mapped with the provided function', function(done){
