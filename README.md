@@ -523,7 +523,7 @@ The function must execute the callback with an error as the first argument.
 
 ```
 
-Task.taskify2 :: `Function -> Task a b`
+### Task.taskify2 :: `Function -> Task a b`
 
 This is very similar to `Task.taskify` except that the given async function is expected
 not to pass any error to its callback function.
@@ -552,6 +552,29 @@ not to pass any error to its callback function.
         // result is NaN here
     }, task2);
 
+
+```
+
+### Task.depromisify :: `Function -> Task a b`
+
+Takes a function that returns a Promise and returns a function that returns a Task.
+
+```javascript
+
+    var promiseFn = function(a,b){
+        return Promise.resolve(a+b);
+    }
+
+    var taskFn = Task.depromisify(promiseFn);
+
+    var task = taskFn(1,2);
+    // note: promiseFn has not been executed at this point
+
+    Task.fork(function(reason){
+        // not run
+    }, function(result){
+        // result is 3 here
+    }, task);
 
 ```
 
