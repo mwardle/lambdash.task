@@ -40,7 +40,7 @@ Task.reject = _.curry(function(value) {
 /**
  * @sig (b -> d) -> Task a b -> Task a d
  */
-Task.map = _.curry(function(fn, task) {
+Task.fmap = _.curry(function(fn, task) {
     return Task(function(reject, resolve) {
         task.exec(reject, _.compose(resolve, fn));
     });
@@ -49,7 +49,7 @@ Task.map = _.curry(function(fn, task) {
 /**
  * @sig (a -> c) -> Task a b -> task c b
  */
-Task.mapRejected = _.curry(function(fn, task) {
+Task.fmapRejected = _.curry(function(fn, task) {
     return Task(function(reject, resolve) {
         task.exec(_.compose(reject, fn), resolve);
     });
@@ -225,7 +225,7 @@ Task.series = _.curry(function(tasks) {
     }
 
     return _.foldr(function(accum, task) {
-        return Task.concatSeries(Task.map(M.of, task), accum);
+        return Task.concatSeries(Task.fmap(M.of, task), accum);
     }, Task.of(M.empty()), tasks);
 });
 
@@ -241,7 +241,7 @@ Task.parallel = _.curry(function(tasks) {
     }
 
     return _.foldr(function(accum, task) {
-        return Task.concatParallel(Task.map(M.of, task), accum);
+        return Task.concatParallel(Task.fmap(M.of, task), accum);
     }, Task.of(M.empty()), tasks);
 });
 
@@ -458,8 +458,8 @@ Task.show = _.curryN(1, _.always('Task'));
 
 /* Task.prototype = _.concat(Task.prototype || {}, {*/
 Task.prototype = _.Obj.concat(Task.prototype, {
-    map: _.thisify(Task.map),
-    mapRejected: _.thisify(Task.mapRejected),
+    fmap: _.thisify(Task.fmap),
+    fmapRejected: _.thisify(Task.fmapRejected),
     recover: _.thisify(Task.recover),
     alwaysRecover: _.thisify(Task.alwaysRecover),
     concatSeries: _.thisify(_.flip(Task.concatSeries)),
