@@ -1,6 +1,6 @@
 var _ = require('lambdash');
 
-Task = _.Type.product('Task', {exec: _.Fun});
+const Task = _.Type.product('Task', {exec: _.Fun});
 Task.TimeoutError = require('./TimeoutError');
 
 
@@ -13,8 +13,8 @@ var immediate = _.Fun.member(setImmediate) ? setImmediate
  *
  * @sig b -> Task a b
  */
-Task.of = _.curry(function(value){
-    return Task(function(reject, resolve){
+Task.of = _.curry(function(value) {
+    return Task(function(reject, resolve) {
         resolve(value);
     });
 });
@@ -31,8 +31,8 @@ Task.resolve = Task.of;
  *
  * @sig a -> Task a b
  */
-Task.reject = _.curry(function(value){
-    return Task(function(reject, resolve){
+Task.reject = _.curry(function(value) {
+    return Task(function(reject, resolve) {
         reject(value);
     });
 });
@@ -40,8 +40,8 @@ Task.reject = _.curry(function(value){
 /**
  * @sig (b -> d) -> Task a b -> Task a d
  */
-Task.map = _.curry(function(fn, task){
-    return Task(function(reject, resolve){
+Task.map = _.curry(function(fn, task) {
+    return Task(function(reject, resolve) {
         task.exec(reject, _.compose(resolve, fn));
     });
 });
@@ -49,8 +49,8 @@ Task.map = _.curry(function(fn, task){
 /**
  * @sig (a -> c) -> Task a b -> task c b
  */
-Task.mapRejected = _.curry(function(fn, task){
-    return Task(function(reject, resolve){
+Task.mapRejected = _.curry(function(fn, task) {
+    return Task(function(reject, resolve) {
         task.exec(_.compose(reject, fn), resolve);
     });
 });
@@ -85,8 +85,8 @@ Task.mapRejected = _.curry(function(fn, task){
  *          // this doesn't happen because the condition didn't pass
  *      }, taskOhNo);
  */
-Task.recover = _.curry(function(cond, transform, task){
-    return Task(function(reject, resolve){
+Task.recover = _.curry(function(cond, transform, task) {
+    return Task(function(reject, resolve) {
         var _recover = function(value) {
             if (cond(value)) {
                 resolve(transform(value));
@@ -108,10 +108,10 @@ Task.alwaysRecover = Task.recover(_.T);
 /**
  * @sig Semigroup b => Task a b -> Task a b -> Task a b
  */
-Task.concatSeries = _.curry(function(left, right){
-    return Task(function(reject, resolve){
-        left.exec(reject, function(l){
-            right.exec(reject, function(r){
+Task.concatSeries = _.curry(function(left, right) {
+    return Task(function(reject, resolve) {
+        left.exec(reject, function(l) {
+            right.exec(reject, function(r) {
                 resolve(_.concat(l,r));
             });
         });
@@ -122,20 +122,19 @@ Task.concatSeries = _.curry(function(left, right){
  * @sig Semigroup b => Task a b -> Task a b -> Task a b
  */
 Task.concatParallel = _.curry(function(left, right) {
-    return Task(function(reject, resolve){
-        var l;
-        var r;
+    return Task(function(reject, resolve) {
+        var l, r;
         var lRet = false;
         var rRet = false;
         var rejected = false;
-        function _rej(r){
-            if (!rejected){
+        function _rej(r) {
+            if (!rejected) {
                 rejected = true;
                 reject(r);
             }
         }
 
-        left.exec(_rej, function(result){
+        left.exec(_rej, function(result) {
             l = result;
             lRet = true;
             if (rRet) {
@@ -143,13 +142,13 @@ Task.concatParallel = _.curry(function(left, right) {
             }
         });
 
-        right.exec(_rej, function(result){
+        right.exec(_rej, function(result) {
             r = result;
             rRet = true;
             if (lRet) {
                 resolve(_.concat(l, r));
             }
-        })
+        });
 
     });
 });
@@ -167,8 +166,8 @@ Task.concat = Task.concatParallel;
  */
 Task.ap = _.curry(function(apply, task) {
     return Task(function(reject, resolve) {
-        apply.exec(reject, function(fnResult){
-            task.exec(reject, function(result){
+        apply.exec(reject, function(fnResult) {
+            task.exec(reject, function(result) {
                 resolve(fnResult(result));
             });
         });
@@ -181,8 +180,8 @@ Task.ap = _.curry(function(apply, task) {
  * @sig Task a (Task a b) -> Task a b
  */
 Task.flatten = _.curry(function(task) {
-    return Task(function(reject, resolve){
-        task.exec(reject, function(result){
+    return Task(function(reject, resolve) {
+        task.exec(reject, function(result) {
             result.exec(reject, resolve);
         });
     });
@@ -193,9 +192,9 @@ Task.flatten = _.curry(function(task) {
  *
  * @sig (b -> Task a d) -> Task a b -> Task a d
  */
-Task.chain = _.curry(function(fn, task){
-    return Task(function(reject, resolve){
-        task.exec(reject, function(result){
+Task.chain = _.curry(function(fn, task) {
+    return Task(function(reject, resolve) {
+        task.exec(reject, function(result) {
             fn(result).exec(reject, resolve);
         });
     });
@@ -206,9 +205,9 @@ Task.chain = _.curry(function(fn, task){
  *
  * @sig (b -> Task a d) -> Task a b -> Task a d
  */
-Task.chainRejected = _.curry(function(fn, task){
-    return Task(function(reject, resolve){
-        task.exec(function(result){
+Task.chainRejected = _.curry(function(fn, task) {
+    return Task(function(reject, resolve) {
+        task.exec(function(result) {
             fn(result).exec(reject, resolve);
         }, resolve);
     });
@@ -225,7 +224,7 @@ Task.series = _.curry(function(tasks) {
         return Task.of(M.empty());
     }
 
-    return _.foldr(function(accum, task){
+    return _.foldr(function(accum, task) {
         return Task.concatSeries(Task.map(M.of, task), accum);
     }, Task.of(M.empty()), tasks);
 });
@@ -241,7 +240,7 @@ Task.parallel = _.curry(function(tasks) {
         return Task.of(M.empty());
     }
 
-    return _.foldr(function(accum, task){
+    return _.foldr(function(accum, task) {
         return Task.concatParallel(Task.map(M.of, task), accum);
     }, Task.of(M.empty()), tasks);
 });
@@ -266,24 +265,24 @@ Task.partition = _.curry(function(tasks) {
 
 
 
-    return Task(function(reject, resolve){
+    return Task(function(reject, resolve) {
 
-        var _check = function(){
+        var _check = function() {
             completed += 1;
             if (completed === l) {
                 resolve(_.concat(M.of(rejects), M.of(resolveds)));
             }
         };
-        var _rej = function(value){
+        var _rej = function(value) {
             rejects = _.append(value, rejects);
             _check();
         };
-        var _res = function(value){
+        var _res = function(value) {
             resolveds = _.append(value, resolveds);
             _check();
         };
 
-        return _.foldr(function(accum, task){
+        return _.foldr(function(accum, task) {
             task.exec(_rej, _res);
         }, null, tasks);
     });
@@ -299,7 +298,7 @@ Task.partition = _.curry(function(tasks) {
  *
  * @sig (a -> ()) -> (b -> ()) -> Task a b -> ()
  */
-Task.fork = _.curry(function(rejected, resolved, task){
+Task.fork = _.curry(function(rejected, resolved, task) {
     task.exec(rejected, resolved);
 });
 
@@ -308,22 +307,22 @@ Task.fork = _.curry(function(rejected, resolved, task){
  *
  * @sig (a -> c) -> (b -> d) -> Task a b -> Task c d
  */
-Task.bimap = _.curry(function(rejected, resolved, task){
-    return Task(function(reject, resolve){
+Task.bimap = _.curry(function(rejected, resolved, task) {
+    return Task(function(reject, resolve) {
         task.exec(_.compose(reject, rejected), _.compose(resolve, resolved));
     });
 });
 
 Task.fromAsync = _.curry(function(async) {
-    return Task(function(reject, resolve){
-        async(function(err, result){
+    return Task(function(reject, resolve) {
+        async(function(err, result) {
             err == null ? resolve(result) : reject(err);
         });
     });
 });
 
 Task.fromAsync2 = _.curry(function(async) {
-    return Task(function(reject, resolve){
+    return Task(function(reject, resolve) {
         async(resolve);
     });
 });
@@ -340,7 +339,7 @@ Task.fromAsync2 = _.curry(function(async) {
  *      Task.fork(onRejected, onResolved, task);
  */
 Task.taskify = _.curry(function(async) {
-    return _.curryN(async.length - 1, function(){
+    return _.curryN(async.length - 1, function() {
         return Task.fromAsync(_.curry(async).apply(this, arguments));
     });
 });
@@ -352,7 +351,7 @@ Task.taskify = _.curry(function(async) {
  * first callback argument.
  */
 Task.taskify2 = _.curry(function(async) {
-    return _.curryN(async.length - 1, function(){
+    return _.curryN(async.length - 1, function() {
         return Task.fromAsync2(_.curry(async).apply(this, arguments));
     });
 });
@@ -362,25 +361,24 @@ Task.taskify2 = _.curry(function(async) {
  *
  * @sig (*... -> Promise) -> (*... -> Task)
  */
-Task.depromisify = _.curry(function(promiseFn)
-{
-    return _.curryN(promiseFn.length, function(){
+Task.depromisify = _.curry(function(promiseFn) {
+    return _.curryN(promiseFn.length, function() {
         var args = arguments;
-        return Task(function(reject, resolve){
+        return Task(function(reject, resolve) {
             console.log('TASK FORKED');
             promiseFn.apply(this, args).then(resolve,reject).catch(reject);
         });
     });
-})
+});
 
 /**
  * Makes a task run async (non-blocking).
  *
  * @sig Task a b -> Task a b
  */
-Task.immediate = _.curry(function(task){
-    return Task(function(reject, resolve){
-        immediate(function(){
+Task.immediate = _.curry(function(task) {
+    return Task(function(reject, resolve) {
+        immediate(function() {
             task.exec(reject, resolve);
         });
     });
@@ -391,9 +389,9 @@ Task.immediate = _.curry(function(task){
  *
  * @sig Number -> Task a b -> Task a b
  */
-Task.delay = _.curry(function(delay, task){
-    return Task(function(reject, resolve){
-        setTimeout(function(){
+Task.delay = _.curry(function(delay, task) {
+    return Task(function(reject, resolve) {
+        setTimeout(function() {
             task.exec(reject, resolve);
         }, delay);
     });
@@ -407,23 +405,23 @@ Task.delay = _.curry(function(delay, task){
  *
  * @sig ((Number) -> a) -> Number -> Task a b -> Task a b
  */
-Task.timeoutWith = _.curry(function(errFn, time, task){
-    return Task(function(reject, resolve){
+Task.timeoutWith = _.curry(function(errFn, time, task) {
+    return Task(function(reject, resolve) {
         var timeout = null;
-        var _reject = function(reason){
+        var _reject = function(reason) {
             if (timeout != null) {
                 clearTimeout(timeout);
                 reject(reason);
             }
-        }
-        var _resolve = function(value){
+        };
+        var _resolve = function(value) {
             if (timeout != null) {
                 clearTimeout(timeout);
                 resolve(value);
             }
-        }
+        };
 
-        timeout = setTimeout(function(){
+        timeout = setTimeout(function() {
             timeout = null;
             reject(errFn(time));
         }, time);
@@ -445,11 +443,11 @@ Task.timeout = Task.timeoutWith(Task.TimeoutError);
  *
  * @sig -> Task a b -> Task a b
  */
-Task.caught = _.curry(function(task){
-    return Task(function(reject, resolve){
+Task.caught = _.curry(function(task) {
+    return Task(function(reject, resolve) {
         try {
             task.exec(reject, resolve);
-        } catch(e) {
+        } catch (e) {
             reject(e);
         }
     });
@@ -458,7 +456,7 @@ Task.caught = _.curry(function(task){
 
 Task.show = _.curryN(1, _.always('Task'));
 
-/*Task.prototype = _.concat(Task.prototype || {}, {*/
+/* Task.prototype = _.concat(Task.prototype || {}, {*/
 Task.prototype = _.Obj.concat(Task.prototype, {
     map: _.thisify(Task.map),
     mapRejected: _.thisify(Task.mapRejected),
@@ -478,7 +476,7 @@ Task.prototype = _.Obj.concat(Task.prototype, {
     timeoutWith: _.thisify(Task.timeoutWith),
     timeout: _.thisify(Task.timeout),
     caught: _.thisify(Task.caught),
-    show: _.thisify(Task.show)
+    show: _.thisify(Task.show),
 });
 
 Task.prototype.constructor = Task;

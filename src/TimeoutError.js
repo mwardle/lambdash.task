@@ -6,9 +6,9 @@ var TimeoutError = function TimeoutError(time, extra) {
     }
     captureStackTrace(this, this.constructor);
     this.name = TimeoutError.name;
-    this.message = "Task timed out after " + time + 'ms';
+    this.message = 'Task timed out after ' + time + 'ms';
     this.extra = extra || {};
-}
+};
 TimeoutError.prototype = Object.create(Error.prototype);
 TimeoutError.prototype.constructor = TimeoutError;
 
