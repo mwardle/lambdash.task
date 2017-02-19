@@ -37,9 +37,9 @@ describe('Task', function() {
         });
     });
 
-    describe('#fmap', function() {
+    describe('#map', function() {
         it('should create a new task whose result is mapped with the provided function', function(done) {
-            var task = Task.fmap(_.add(1), Task.of(1));
+            var task = Task.map(_.add(1), Task.of(1));
 
             assert(Task.member(task));
 
@@ -47,7 +47,7 @@ describe('Task', function() {
         });
 
         it('should create a new task whose result is the rejected value if the result of the original task is a reject', function(done) {
-            var task = Task.fmap(_.add(1), Task.reject(1));
+            var task = Task.map(_.add(1), Task.reject(1));
 
             assert(Task.member(task));
 
@@ -55,9 +55,9 @@ describe('Task', function() {
         });
     });
 
-    describe('#fmapRejected', function() {
+    describe('#mapRejected', function() {
         it('should create a new task whose rejection is mapped with the provided function', function(done) {
-            var task = Task.fmapRejected(_.add(1), Task.reject(1));
+            var task = Task.mapRejected(_.add(1), Task.reject(1));
 
             assert(Task.member(task));
 
@@ -65,7 +65,7 @@ describe('Task', function() {
         });
 
         it('should create a new task whose result is the resolved value if the result of the original task is resolved', function(done) {
-            var task = Task.fmapRejected(_.add(1), Task.of(1));
+            var task = Task.mapRejected(_.add(1), Task.of(1));
 
             assert(Task.member(task));
 
@@ -776,7 +776,7 @@ describe('Task', function() {
 
     describe('@prototype#map', function() {
         it('should create a new task whose result is mapped with the provided function', function(done) {
-            var task = Task.of(1).fmap(_.add(1));
+            var task = Task.of(1).map(_.add(1));
 
             assert(Task.member(task));
 
@@ -784,7 +784,7 @@ describe('Task', function() {
         });
 
         it('should create a new task whose result is the rejected value if the result of the original task is a reject', function(done) {
-            var task = Task.reject(1).fmap(_.add(1));
+            var task = Task.reject(1).map(_.add(1));
 
             assert(Task.member(task));
 
@@ -794,7 +794,7 @@ describe('Task', function() {
 
     describe('@prototype#mapRejected', function() {
         it('should create a new task whose rejection is mapped with the provided function', function(done) {
-            var task = Task.reject(1).fmapRejected(_.add(1));
+            var task = Task.reject(1).mapRejected(_.add(1));
 
             assert(Task.member(task));
 
@@ -802,7 +802,7 @@ describe('Task', function() {
         });
 
         it('should create a new task whose result is the resolved value if the result of the original task is resolved', function(done) {
-            var task = Task.of(1).fmapRejected(_.add(1));
+            var task = Task.of(1).mapRejected(_.add(1));
 
             assert(Task.member(task));
 
