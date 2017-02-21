@@ -1,6 +1,6 @@
 {
   "name": "lambdash.task",
-  "version": "0.7.0-alpha",
+  "version": "0.7.0-alpha.2",
   "description": "Task data type for Lambdash",
   "main": "src/Task.js",
   "directories": {
@@ -16,7 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "capture-stack-trace": "^1.0.0",
-    "lambdash": "^0.7.0-alpha"
+    "lambdash": "^0.7.0-alpha.2"
   },
   "repository": "https://github.com/mwardle/lambdash.task.git",
   "devDependencies": {

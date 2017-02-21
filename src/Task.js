@@ -481,4 +481,10 @@ Task.prototype = _.Obj.concat(Task.prototype, {
 
 Task.prototype.constructor = Task;
 
+_.Functor.deriveFor(Task);
+_.Semigroup.deriveFor(Task);
+_.Applicative.deriveFor(Task);
+_.Show.deriveFor(Task);
+_.Monad.deriveFor(Task);
+
 module.exports = Task;
